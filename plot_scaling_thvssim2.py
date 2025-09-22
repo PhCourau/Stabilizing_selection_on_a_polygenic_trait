@@ -21,7 +21,7 @@ alphabar = np.sum(list_alpha*list_proba_alpha)
 klim = 81 #Degree of precision for the theoretical computations under strong selection
 #If klim is too low then the genetic variance sigma2_th_fp will have a bump for strong selection
 
-limit_autocor = 100 #We will compute the correlation between Delta_t and Delta_{t+s} for s smaller
+limit_autocor = 1000 #We will compute the correlation between Delta_t and Delta_{t+s} for s smaller
                      #than limit_autocor
 
 # What shall we plot ?
@@ -205,7 +205,7 @@ if plotrho:
 list_rhoth = correctedrhoN_th/N2
 
 rho_u = np.array([-np.log(list_autocor[k])/list_rho2[k] for k in np.arange(0,nbpoints2,2)])
-u0 = 1/(2*N)
+u0 = 1/(2*N2)
 list_u = np.repeat([np.arange(limit_autocor)],nbpoints2//2,axis=0)
 
 list_omem2 = np.repeat([omem22[::2]],limit_autocor,axis=0)
