@@ -16,7 +16,7 @@ To generate Figure 3, first you must create 2 empty folders named sims_L100_N500
 Then you must run the file save_simulations.py to fill the folder sims_L100_N500 with the appropriate simulations (on my laptop, this runs for about 10 days). Then go into save_simulations.py, on line 7 replace N=500 with N=50 and rerun the file (this will fill the folder sims_L100_N50).
 Finally, running the file plot_th_vs_sim.py will plot Figure 2 and Figure S5.
 
-To generate Figure 4, run the file 
+Figure 4 was generated using solve_fixed_point.py
 
 To generate Figure 5, first run
         mkdir contoursims/sims_L100_N500
