@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import scipy.stats as scp
 from solve_fixed_point import *
 listcolors=plt.get_cmap("viridis")
 
@@ -27,13 +28,13 @@ plotdelta = True
 plotnu = True
 plotsigma = True
 plotrho = True
-plotautocor = False
-plot_correction = False
+plotautocor = True
+
 
 ################################## LOADING ########################################
 burn_in = 1/2 #We consider that the system reaches stationarity after a fraction burn_in of the time
 ########## LOADING N=100 #########
-N=50
+N=500 #50
 nbpoints=20
 
 omega = np.zeros(nbpoints)
@@ -64,7 +65,7 @@ omem2 = 2*N/omega**2
 
 ########## LOADING N=500 #########
 N2=500
-nbpoints2=20
+nbpoints2=23
 
 omega2 = np.zeros(nbpoints2)
 list_means2 = np.zeros(nbpoints2)
@@ -77,6 +78,7 @@ list_rho2 = np.zeros(nbpoints2) #Autocorrelation parameters
 rho_u = np.array([]) #Autocorrelations
 list_urho_u0 = np.array([])
 list_omem2_autocor=np.array([])
+list_rsq = np.zeros(nbpoints2) #r2 of log-autocorrelation
 
 tmp = np.load("sims_L"+str(L)+"_N"+str(N2)+"/"+str(0)+".npy",allow_pickle=True)
 postburnin = int(len(tmp[3])*(1-burn_in))
@@ -90,20 +92,16 @@ for k in range(nbpoints2):
   list_varvarsX2[k] = np.var(tmp[4][-postburnin:],ddof=1)
   list_meanvars2[k] = np.mean(tmp[5][-postburnin:])
   list_varvars2[k] = np.var(tmp[5][-postburnin:],ddof=1)
-  if plotautocor: #and (k%2==0)):
-    limit_autocor = int(1.5/list_rho2[k])
+
+  if plotautocor:
+    limit_autocor = int(np.log(2)/list_rho2[k])
     if k==0:
       limit_autocor0 = limit_autocor
-    tmprho_u = np.zeros(limit_autocor0)
-    list_tj = np.zeros(limit_autocor0)
-    for j in range(1,limit_autocor0):
-      tj = int((j*limit_autocor)//limit_autocor0)
-      autocor = np.cov(tmp[3][-postburnin:-tj],tmp[3][-postburnin+tj:])[0,1]/list_varmeans2[k]
+    tmprho_u = np.zeros(limit_autocor)
+    for j in range(1,limit_autocor):
+      autocor = np.cov(tmp[3][-postburnin:-j],tmp[3][-postburnin+j:])[0,1]/list_varmeans2[k]
       tmprho_u[j] = -np.log(autocor)
-      list_tj[j] = tj
-    rho_u = np.append(rho_u,tmprho_u)
-    list_urho_u0 = np.append(list_urho_u0,list_tj*list_rho2[k])
-    list_omem2_autocor = np.append(list_omem2_autocor,np.repeat(2*N2*omega2[k]**(-2),limit_autocor0))
+    list_rsq[k] = scp.linregress(np.arange(limit_autocor),tmprho_u)[2]**2
 
 tmp = None
 
@@ -139,10 +137,9 @@ if plotdelta:
   list_delta_strong = -omega**2 * s2N_fp/(2*N)
   line4 = ax[0,0].plot(omem2,-list_delta_strong,label="Fixed point",color=listcolors(0.6),ls="-.")
   list_delta_ms = -omega**2 * s2N_ms/(2*N)
-  #line5 = ax[0,0].plot(omem2,-list_delta_ms,label="Moderate selection",color=listcolors(.75),ls="--")
+  line5 = ax[0,0].plot(omem2,-list_delta_ms,label="Moderate selection",color=listcolors(.75),ls="--")
   ax[0,0].set_xlabel(r"$\omega_e^{-2}$")
-  ax[0,0].set_ylabel(r"$-\Delta$ (distance to optimum)")
-  ax[0,0].set_title("A",loc="left")
+  ax[0,0].set_ylabel(r"$-\Delta$")
   ax[0,0].legend()
 
 ##### PLOTTING SIGMA #####
@@ -150,11 +147,11 @@ if plotsigma:
   ax[1,0].set_xscale("log")
   ax[1,0].set_yscale("log")
   transparency=1
-  ax[1,0].plot(omem2,list_meanvars,marker="v",label="N="+str(N),ls="",color="blue",alpha=transparency)
+  ax[1,0].plot(omem2,np.sqrt(list_meanvars),marker="v",label="N="+str(N),ls="",color="blue",alpha=transparency)
   #If we neglect linkage, then we expect Var[z] = 2 L E[alpha**2 X(1-X)] = 2 list_meanvarsX
-  ax[1,0].plot(omem2,2*list_meanvarsX,marker="1",label="N="+str(N)+" (LE)",ls="",color="blue",alpha=transparency)
-  ax[1,0].plot(omem22,list_meanvars2,marker="^",label="N="+str(N2),ls="",color="purple",alpha=transparency)
-  ax[1,0].plot(omem22,2*list_meanvarsX2,marker="2",label="N="+str(N2)+" (LE)",ls="",color="purple",alpha=transparency)
+  ax[1,0].plot(omem2,np.sqrt(2*list_meanvarsX),marker="1",label="N="+str(N)+" (no linkage)",ls="",color="blue",alpha=transparency)
+  ax[1,0].plot(omem22,np.sqrt(list_meanvars2),marker="^",label="N="+str(N2),ls="",color="purple",alpha=transparency)
+  ax[1,0].plot(omem22,np.sqrt(2*list_meanvarsX2),marker="2",label="N="+str(N2)+" (no linkage)",ls="",color="purple",alpha=transparency)
 
 sigma2_th_fp = np.array([ #fixed_point
                       genetic_variance_fp(s2N_fp[k],
@@ -171,19 +168,11 @@ sigma2_th_fp = np.array([ #fixed_point
 sigma2_th_ms = genetic_variance_ms(s2N_ms,theta,L,list_alpha,list_proba_alpha)*np.ones(nbpoints)
 
 if plotsigma:
-  ax[1,0].loglog(omem2,sigma2_th_fp, label="Fixed point",color=listcolors(.6),alpha=transparency,ls="-.")
-  #ax[1,0].loglog(omem2,np.sqrt(sigma2_th_ms),label="Moderate selection",color=listcolors(.75),alpha=transparency,ls="--")
-  ax[1,0].set_xlabel(r"$\omega_e^{-2}$ (selection strength)")
-  ax[1,0].set_ylabel(r"$\sigma^2$ (genetic variance)")
-  ax[1,0].set_title("C",loc="left")
-
-  if plot_correction:
-    correction = (1-1/2*np.log(L) * sigma2_th_fp/omega**2)
-    correction2 = (1-1/2*np.log(L) * sigma2_th_fp/omega2**2)
-    ax[1,0].loglog(omem2,np.sqrt(sigma2_th_fp *correction), label="Correction (N=50)",color="red",alpha=transparency,ls="-")
-    ax[1,0].loglog(omem2,np.sqrt(sigma2_th_fp /correction2), label="Correction (N=500)",color="orange",alpha=transparency,ls=":")
+  ax[1,0].loglog(omem2,np.sqrt(sigma2_th_fp), label="Fixed point",color=listcolors(.6),alpha=transparency,ls="-.")
+  ax[1,0].loglog(omem2,np.sqrt(sigma2_th_ms),label="Moderate selection",color=listcolors(.75),alpha=transparency,ls="--")
+  ax[1,0].set_xlabel(r"$\omega_e^{-2}$")
+  ax[1,0].set_ylabel(r"$\sigma$")
   ax[1,0].legend()
-
 
 #####   PLOTTING NU #####
 if plotnu:
@@ -192,13 +181,12 @@ if plotnu:
   nu = alphabar/np.sqrt(2*gamma)
   neutral_prediction = sigma2_th_fp/(theta[0]+theta[1]) #Keeping in mind theta = mu * 2*N
   ax[0,1].loglog(omem2,np.sqrt(1/(1/neutral_prediction+1/nu**2)),label="Weak selection",color=listcolors(.9),ls="-")
-  ax[0,1].loglog(omem2,nu,label="Fixed point",color=listcolors(.6),ls="--")
+  ax[0,1].loglog(omem2,nu,label="Moderate/strong selection",color=listcolors(.6),ls="--")
 
 
   ax[0,1].legend()
   ax[0,1].set_xlabel(r"$\omega_e^{-2}$")
-  ax[0,1].set_ylabel(r"$\nu$ (amplitude of fluctuations of $\bar z_t$)")
-  ax[0,1].set_title("B",loc="left")
+  ax[0,1].set_ylabel(r"$\nu$")
 
 
 ##### PLOTTING N RHO #####
@@ -214,32 +202,18 @@ if plotrho:
 
   ax[1,1].loglog(omem2,2*correctedrhoN_th,label="Weak selection",color=listcolors(0.9),ls="-")
   ax[1,1].loglog(omem2,2*rhoN_th_fp,label="Fixed point",color=listcolors(0.6),ls="-.")
-  #ax[1,1].loglog(omem2,2*rhoN_th_ms,label="Moderate selection",color=listcolors(0.75),ls="--")
+  ax[1,1].loglog(omem2,2*rhoN_th_ms,label="Moderate selection",color=listcolors(0.75),ls="--")
   ax[1,1].set_xlabel(r"$\omega_e^{-2}$")
-  ax[1,1].set_ylabel(r"$\rho$ (autocorrelation parameter of $\bar z_t$)")
-  ax[1,1].set_title("D",loc="left")
+  ax[1,1].set_ylabel(r"$\rho$")
   ax[1,1].legend()
   plt.show()
 
 
 ##### PLOTTING AUTOCORRELATION #####
-#rho_u = np.array([np.log(list_autocor[k])/np.log(list_autocor[k,1]) for k in np.arange(0,nbpoints2,2)])
-list_urho_u0 = np.array(list_urho_u0)
-u0 = 1/(2*N2)
-
-
 if plotautocor:
-  list_transparency = 1/2 #(1.1-list_index/np.max(list_index))/2
-  plt.scatter(list_urho_u0[::-1] ,rho_u[::-1],c=list_omem2_autocor[::-1],alpha=list_transparency,norm=mpl.colors.LogNorm())
-
-  plt.plot([0,1.5],[0,1.5],color="red")
-
-  color_bar=plt.colorbar(label=r"$\omega_e^{-2}$")
-  color_bar.set_alpha(1)
-  color_bar.draw_all()
-
-  plt.xlabel(r"$\frac{u}{u_0} \rho_{u_0}$")
-  plt.ylabel(r"$\rho_u$")
+  fig,ax = plt.subplots()
+  ax.plot(omem22,list_rsq,"o",color="purple")
+  ax.set_xscale("log")
+  ax.set_xlabel(r"$\omega_e^{-2}$")
+  ax.set_ylabel(r"$r^2((\rho_u)_{u\leq u_0})$")
   plt.show()
-
-
