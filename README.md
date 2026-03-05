@@ -5,6 +5,7 @@ This folder contains all of the code used to generate the simulations and figure
 
 
 ## Generating the figures
+Figure 1 was generated manually.
 To generate Figure 2, first you must create an empty folder named sims_L100_N100 by running the command
       mkdir sims_L100_N100
 Then you must go into save_simulations.py, on line 7 replace N=500 with N=100 and run save_simulations.py (this fills the folder sims_L100_N100).
@@ -26,13 +27,15 @@ To generate Figure S1 (illustrating the selection coefficient as a regression on
 
 To generate Figure S2 (illustrating time-averaging), run the file slowfast.py.
 
-To generate Figure S3 (illustrating the breakdown for small mutation rates), first run
+To generate Figure S5 (illustrating the breakdown for small mutation rates), first run
         mkdir breakdown_smallmut/sims_L100_N500
 Then run breakdown_smallmut/save_simulations.py and breakdown_smallmut/save_simulations2.py (in parallel, this goes faster). This generates the simulations to fill up breakdown_smallmut/sims_L100_N500/. Then run breakdown_smallmut/plot_th_vs_sim.py 
 
-To generate Figure S4 (illustrating the breakdown when the distribution of alpha has heavy tails), first run
+To generate Figure S6 (illustrating the breakdown when the distribution of alpha has heavy tails), first run
         mkdir pareto/sims_L100
 Then run pareto/save_simulations.py followed by pareto/plot_th_vs_sim.py
+
+To generate Figure S7 (illustrating the breakdown of the Ornstein-Uhlenbeck dynamics for the trait mean), use the same procedure as to generate Figure 3.
 
 ## Concerning the other files
 The file simulate_population.py contains the code to simulate the individual-based model.
