@@ -37,7 +37,7 @@ def gss(f, a0, b0, tolerance=1e-5):
 def integral_WF(a,b,c,d,klim):
   """
   Computes
-  sum_{k} c^k / (k!)   a(a+1)...(a+k-1)/((a+b)(a+b+1)...(a+b+k-1)) 1F1(a+k,b;a+b+k;d)
+  sum_{k} c^k / (k!)   a(a+1)...(a+k-1)/((a+b)(a+b+1)...(a+b+2k-1)) 1F1(a+k,b;a+b+2k;c)
   One can check that this is proportionnal to the integral of
   x^{a-1} (1-x)^{b-1} e^{cx + dx(1-x)}
   with proportionnality coefficient independent of c and d.
@@ -176,6 +176,49 @@ def solve_fp(gamma,
   )
 
 
+################# Fixed point equation (small mutation rates) ####################
+# If the mutation rate is small, then all computations for strong selection are the same as for moderate selection
+# except for the genetic variance. We have
+def mean_X1_X_sm(s2N,d2N,theta):
+  """
+  Computes the integral of e**(cx + dx(1-x))
+  which is approximately equal to
+  E[X(1-X)]
+  if theta is small and X has distribution
+  x**(theta[0]-1) * x**(theta[1]-1) * np.exp(s2N*x + d2N*x*(1-x))
+
+  Parameters
+  ----------
+  theta: tuple of two positive floats: mutation rates
+  s2N: array of float: directional selection coefficients to be evaluated
+  d2N: float: dominance coefficients to be evaluated
+  """
+  return np.array([integ.quad(lambda x: np.exp(s2N[k]*x+d2N[k]*x*(1-x)),0,1)[0]
+          /special.hyp1f1(2*theta[0],2*(theta[0]+theta[1]),s2N[k])
+          * theta[0]*theta[1]/(theta[0]+theta[1]) #normalization constant
+                   for k in range(np.shape(s2N)[0])
+                  ])
+
+def genetic_variance_fp_sm(s2N,gamma,theta,L,alphabar,list_alpha,list_proba_alpha):
+  """Finds the mean E[2 alpha**2 X(1-X)] under the assumption of small mutation rates.
+  Arguments:
+  ----------
+  theta: mutation rates (tuple of two positive floats)
+
+  s2N: effective selection coefficient s^*
+
+  alphabar: mean effect of an allele
+
+  list_alpha: list of classes of values for gene effect. Typically np.linspace(a,b)
+
+  list_proba_alpha: the list of probabilities of each class in list_alpha
+  """
+  return L*np.sum(2*list_alpha**2*mean_X1_X_sm(s2N*list_alpha,
+                                               -gamma*(list_alpha/alphabar)**2,
+                                            theta)
+                  *list_proba_alpha)
+
+
 ############################ Moderate selection ##################################
 def mean_X_ms(s2N,theta):
   """Finds the mean X associated with a modified beta solution
@@ -242,6 +285,36 @@ def solve_ms(theta,
                                                theta,
                                                eta,
                                                L,
+                                               list_alpha,
+                                               list_proba_alpha),
+             a0,b0, #Boundaries of the golden-section search
+             tolerance=tolerance
+  )
+
+#######################Weak selection##############################
+def match_equation_ws(s2N,gamma,theta,eta,L,alphabar,list_alpha,list_proba_alpha):
+  """Finds the absolute value of the distance between the mean phenotype and the
+  optimum eta"""
+  return np.abs(mean_phenotype_ms(s2N,theta,L,list_alpha,list_proba_alpha)-eta+s2N*alphabar**2/(2*gamma))
+
+def solve_ws(gamma,
+                     theta,
+                     eta,
+                     L,
+                     alphabar,
+                     list_alpha,
+                     list_proba_alpha,
+                     tolerance=1e-5,
+                     a0=-1000,
+                     b0=1000):
+  """Finds the value of s^* given by the equation for moderate selection, searches
+     on the interval (a0,b0)"""
+  return gss(lambda s: match_equation_ws(s,
+                                               gamma,
+                                               theta,
+                                               eta,
+                                               L,
+                                               alphabar,
                                                list_alpha,
                                                list_proba_alpha),
              a0,b0, #Boundaries of the golden-section search
