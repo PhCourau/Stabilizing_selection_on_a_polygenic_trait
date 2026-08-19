@@ -1,9 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
 import scipy.special as special
+import multiprocessing
 #This file contains the function Simulate which
 # simulates a population under selection, mutation, genetic drift.
 
+logging.basicConfig(level=logging.INFO)
+logger = multiprocessing.log_to_stderr()
+logger.setLevel(logging.INFO)
 
 
 def generate_mutated(size,theta):
@@ -127,37 +132,37 @@ class Population():
 
 
 def Simulate(theta,omega,eta,N,L,T,initial_pop=None,record_every = 1,alpha=None,alphamethod=random_exponential):
-	"""Simulates population evolution over time T. Returns vector of allele frequencies.
-	Parameters:
-	----------
-	theta: mutation rates. The probability of mutation from -1 to +1 is theta[0]/(2N) per locus
+    """Simulates population evolution over time T. Returns vector of allele frequencies.
+    Parameters:
+    ----------
+    theta: mutation rates. The probability of mutation from -1 to +1 is theta[0]/(2N) per locus
                per generation per haploid genome
-	omega: inverse selection strength
-	N: diploid population size
-	L: number of loci
-	T: how long the simulation should last (in units of N)
-	recond_every: optional:how often should the population be recorded ?
+    omega: inverse selection strength
+    N: diploid population size
+    L: number of loci
+    T: how long the simulation should last (in units of N)
+    recond_every: optional:how often should the population be recorded ?
 
-	Returns:
-	list_allele_frequencies,list_varfitnesses,parameters
-	"""
-	nb_timesteps = int(T*N)+1
-	list_meantraits = np.zeros(nb_timesteps//record_every)
-	list_vartraits = np.zeros(nb_timesteps//record_every)
-	list_varX = np.zeros(nb_timesteps//record_every)
+    Returns:
+    list_allele_frequencies,list_varfitnesses,parameters
+    """
+    nb_timesteps = int(T*N)+1
+    list_meantraits = np.zeros(nb_timesteps//record_every)
+    list_vartraits = np.zeros(nb_timesteps//record_every)
+    list_varX = np.zeros(nb_timesteps//record_every)
 
-	pop = Population(theta,N,L,population=initial_pop,alpha=alpha,alphamethod=alphamethod)
+    pop = Population(theta,N,L,population=initial_pop,alpha=alpha,alphamethod=alphamethod)
 
-	for tN,t in enumerate(np.linspace(0,T,nb_timesteps)):
-		pop.selection_drift_sex(omega,eta,N,L)
-		pop.mutation(theta,N,L)
-		if (tN*100)%(nb_timesteps-1)==0:
-			print("Done: "+str((tN*100)//nb_timesteps+1)+" per cent")
-		if tN%record_every==0:
-			list_meantraits[tN//record_every] = pop.meantraits
-			list_vartraits[tN//record_every] = pop.vartraits
-			list_varX[tN//record_every] = np.sum(pop.alpha**2
+    for tN,t in enumerate(np.linspace(0,T,nb_timesteps)):
+        pop.selection_drift_sex(omega,eta,N,L)
+        pop.mutation(theta,N,L)
+        if (tN*100)%(nb_timesteps-1)==0:
+            logger.info("Done: "+str((tN*100)//nb_timesteps+1)+" per cent")
+        if tN%record_every==0:
+            list_meantraits[tN//record_every] = pop.meantraits
+            list_vartraits[tN//record_every] = pop.vartraits
+            list_varX[tN//record_every] = np.sum(pop.alpha**2
                                            *pop.allele_frequencies()*(1-pop.allele_frequencies()))
-	return pop.allele_frequencies(), pop.alpha, list_meantraits, list_varX, list_vartraits
+    return pop.allele_frequencies(), pop.alpha, list_meantraits, list_varX, list_vartraits
 
 
