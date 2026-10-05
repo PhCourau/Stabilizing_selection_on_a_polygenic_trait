@@ -1,0 +1,10 @@
+The packages required to run Figures.ipynb are
+
+*    matplotlib
+*    numpy
+*    scipy
+*    seaborn (for the heatmap)
+*    statsmodels
+*    tqdm
+*    warnings
+*    unittest
