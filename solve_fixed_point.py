@@ -176,7 +176,7 @@ def solve_fp(gamma,
   )
 
 
-################# Fixed point equation (small mutation rates) ####################
+################# Genetic variance (small mutation rates) ####################
 # If the mutation rate is small, then all computations for strong selection are the same as for moderate selection
 # except for the genetic variance. We have
 def mean_X1_X_sm(s2N,d2N,theta):
