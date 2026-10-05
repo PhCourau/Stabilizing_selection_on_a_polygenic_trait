@@ -6,8 +6,8 @@ from multiprocessing import Pool, freeze_support, set_start_method, log_to_stder
 def main():
     #----- Fixed parameters
     eta = 1.2
-    T= 1 #000
-    N=5 #0
+    T= 1000
+    N=50
     L=100
     theta = (.1,.2) # The rate of mutation from 0 to +1 is muN[0]/N per organism
                  # per generation per locus
